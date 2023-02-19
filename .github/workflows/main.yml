@@ -62,6 +62,6 @@ jobs:
       
       # Runs a single command using the runners shell
       - name: Commiting changes
-        uses: stefanzweifel/git-auto-commit-action@v4
+      - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Automatically applied spotless
