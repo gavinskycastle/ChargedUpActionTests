@@ -7,8 +7,8 @@ package frc.robot.commands.elevator;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.Elevator;
-import java.util.function.DoubleSupplier;
 import frc.robot.subsystems.Elevator.elevatorHeights;
+import java.util.function.DoubleSupplier;
 
 public class IncrementElevatorHeight extends CommandBase {
   /** Creates a new IncrementElevatorHeight. This is our default command */
@@ -42,9 +42,9 @@ public class IncrementElevatorHeight extends CommandBase {
     }
 
     // Deadbands joystick Y so joystick Ys below 0.05 won't be registered
-    double joystickYDeadbandOutput = MathUtil.applyDeadband(
-      Math.abs(m_joystickY.getAsDouble()), 0.05)
-      * Math.signum(m_joystickY.getAsDouble());
+    double joystickYDeadbandOutput =
+        MathUtil.applyDeadband(Math.abs(m_joystickY.getAsDouble()), 0.05)
+            * Math.signum(m_joystickY.getAsDouble());
 
     m_elevator.setElevatorJoystickY(joystickYDeadbandOutput);
   }
