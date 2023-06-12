@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
+import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -82,7 +83,6 @@ public class RobotContainer implements AutoCloseable {
   private final Wrist m_wrist = new Wrist(m_intake);
   private final Controls m_controls = new Controls();
   private final Vision m_vision = new Vision(m_swerveDrive, m_logger, m_controls, m_intake);
-  private final SendableChooser<Command> m_autoChooser = new SendableChooser<>();
   private final LEDSubsystem m_led = new LEDSubsystem(m_controls);
   private final StateHandler m_stateHandler =
       new StateHandler(m_intake, m_wrist, m_swerveDrive, m_elevator, m_vision);
@@ -90,6 +90,9 @@ public class RobotContainer implements AutoCloseable {
       new FieldSim(m_swerveDrive, m_vision, m_elevator, m_wrist, m_stateHandler, m_controls);
 
   private SendableChooser<List<PathPlannerTrajectory>> autoPlotter;
+
+  private final Subsystem[] m_subsystems = {m_swerveDrive, m_elevator, m_intake, m_wrist, m_controls, m_vision, m_led, m_stateHandler, m_fieldSim};
+  private SendableAutoChooser m_autoChooser = new SendableAutoChooser("frc.robot.commands", m_subsystems);
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
 
@@ -351,150 +354,13 @@ public class RobotContainer implements AutoCloseable {
   /** Use this to pass the autonomous command to the main {@link Robot} class. */
   public void initializeAutoChooser() {
 
-    // Main Autos
-
-    m_autoChooser.addOption(
-        "SubstationThree",
-        new SubstationThree(
-            "SubstationTwoPickup",
-            m_swerveDrive,
-            m_fieldSim,
-            m_wrist,
-            m_intake,
-            m_vision,
-            m_elevator,
-            m_stateHandler));
-
-    m_autoChooser.addOption(
-        "SubstationTwoBalance",
-        new SubstationTwoBalance(
-            "SubstationTwoBalance",
-            m_swerveDrive,
-            m_fieldSim,
-            m_wrist,
-            m_intake,
-            m_vision,
-            m_elevator,
-            m_stateHandler));
-
-    m_autoChooser.addOption(
-        "CenterOneBalanceCross",
-        new CenterOneBalanceCross(
-            "CenterOneBalanceCross",
-            m_swerveDrive,
-            m_fieldSim,
-            m_wrist,
-            m_intake,
-            m_elevator,
-            m_vision,
-            m_stateHandler));
-
-    m_autoChooser.addOption(
-        "BumpTwo",
-        new BumpTwo(
-            "BumpTwo",
-            m_swerveDrive,
-            m_fieldSim,
-            m_wrist,
-            m_intake,
-            m_vision,
-            m_elevator,
-            m_stateHandler));
-
-    // Back Up Autos
-
-    // m_autoChooser.addOption(
-    //   "SubstationTwo",
-    //   new SubstationTwo(
-    //       "SubstationTwo",
-    //       m_swerveDrive,
-    //       m_fieldSim,
-    //       m_wrist,
-    //       m_intake,
-    //       m_vision,
-    //       m_elevator,
-    //       m_stateHandler));
-
-    m_autoChooser.addOption(
-        "CenterOneBalance",
-        new CenterOneBalance(
-            "CenterOneBalance",
-            m_swerveDrive,
-            m_fieldSim,
-            m_wrist,
-            m_intake,
-            m_elevator,
-            m_vision,
-            m_stateHandler));
-
-    // m_autoChooser.addOption(
-    //   "BumpOnePickUp",
-    //   new BumpOnePickUp(
-    //       "BumpOnePickUp",
-    //       m_swerveDrive,
-    //       m_fieldSim,
-    //       m_wrist,
-    //       m_intake,
-    //       m_vision,
-    //       m_elevator,
-    //       m_stateHandler));
-
-    m_autoChooser.addOption(
-        "DriveForward",
-        new DriveForward(
-            "DriveForward", m_swerveDrive, m_fieldSim, m_wrist, m_elevator, m_stateHandler));
-
-    m_autoChooser.setDefaultOption("Do Nothing", new WaitCommand(0));
-
-    // Test Autos
-
-    // m_autoChooser.addOption(
-    //     "JustBalance",
-    //     new JustBalance(
-    //         "JustBalance", m_swerveDrive, m_fieldSim, m_wrist, m_intake, m_elevator, m_vision));
-
-    m_autoChooser.addOption(
-        "TEST: HighConeTimer",
-        new HighConeTimerTest(
-            m_swerveDrive, m_fieldSim, m_wrist, m_intake, m_vision, m_elevator, m_stateHandler));
-
-    m_autoChooser.addOption(
-        "TEST: HighCubeTimer",
-        new HighCubeTimerTest(
-            m_swerveDrive, m_fieldSim, m_wrist, m_intake, m_vision, m_elevator, m_stateHandler));
-
-    m_autoChooser.addOption(
-        "TEST: MidCubeTimer",
-        new MidCubeTimerTest(
-            m_swerveDrive, m_fieldSim, m_wrist, m_intake, m_vision, m_elevator, m_stateHandler));
-
-    // m_autoChooser.addOption(
-    //     "JustBalance",
-    //     new JustBalance(
-    //         "JustBalance", m_swerveDrive, m_fieldSim, m_wrist, m_intake, m_elevator, m_vision));
-
-    // m_autoChooser.addOption(
-    //     "Limelight Test",
-    //     new LimeLightTest(
-    //         "DriveForward",
-    //         m_swerveDrive,
-    //         m_fieldSim,
-    //         m_wrist,
-    //         m_intake,
-    //         m_vision,
-    //         m_elevator,
-    //         m_stateHandler));
-
-    // m_autoChooser.addOption("AutoBalance", new AutoBalance(m_swerveDrive));
+    m_autoChooser.getChooser().setDefaultOption("Do Nothing");
 
     if (RobotBase.isSimulation()) {
-      m_autoChooser.setDefaultOption(
-          "TestSimAuto",
-          new TestSimAuto(
-              "TestSimAuto Copy", m_swerveDrive, m_elevator, m_wrist, m_stateHandler, m_fieldSim));
+      m_autoChooser.setDefaultOption("TestSimAuto");
     }
 
-    SmartDashboard.putData("Auto Selector", m_autoChooser);
+    SmartDashboard.putData("Auto Selector", m_autoChooser.getChooser());
 
     // Auto trajectory visualizer for testing/debugging
     if (RobotBase.isSimulation()) {
@@ -525,7 +391,7 @@ public class RobotContainer implements AutoCloseable {
 
   public Command getAutonomousCommand() {
     // An example command will be run in autonomous
-    return m_autoChooser.getSelected();
+    return m_autoChooser.getChooser().getSelected();
   }
 
   public SwerveDrive getSwerveDrive() {

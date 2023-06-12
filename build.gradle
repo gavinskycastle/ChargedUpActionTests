@@ -150,3 +150,9 @@ spotless {
 afterEvaluate {
     tasks.getByName('spotlessCheck').dependsOn(tasks.getByName('spotlessApply'))
 }
+
+implementation('4201VitruvianBots:Codex:Codex') {
+    version {
+        branch = 'main'
+    }
+}

@@ -25,3 +25,9 @@ pluginManagement {
         }
     }
 }
+
+sourceControl {
+    gitRepository(URI.create("https://github.com/4201VitruvianBots/Codex.git")) {
+        producesModule("Codex:Codex")
+    }
+}

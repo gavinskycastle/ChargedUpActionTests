@@ -97,8 +97,8 @@ public class StateHandler extends SubsystemBase implements AutoCloseable {
   private static double m_lastSimTime;
   private static double m_currentSimTime;
 
-  private final SendableChooser<SUPERSTRUCTURE_STATE> m_mainStateChooser = new SendableChooser<>();
-  private final SendableChooser<SCORING_STATE> m_scoringStateChooser = new SendableChooser<>();
+  private final SendableEnumChooser<SUPERSTRUCTURE_STATE> m_mainStateChooser = new SendableEnumChooser();
+  private final SendableEnumChooser<SCORING_STATE> m_scoringStateChooser = new SendableEnumChooser();
   private boolean m_testScoringState;
 
   private StringPublisher m_currentStatePub, m_desiredStatePub, m_currentZonePub;
@@ -147,19 +147,12 @@ public class StateHandler extends SubsystemBase implements AutoCloseable {
   }
 
   public void initializeScoringChooser() {
-    for (SCORING_STATE state : SCORING_STATE.values()) {
-      m_scoringStateChooser.addOption(state.toString(), state);
-    }
-
     m_scoringStateChooser.setDefaultOption("STOWED", SCORING_STATE.STOWED);
 
     SmartDashboard.putData("Scoring State Selector", m_scoringStateChooser);
   }
 
   public void initializeMainStateChooser() {
-    for (SUPERSTRUCTURE_STATE state : SUPERSTRUCTURE_STATE.values()) {
-      m_mainStateChooser.addOption(state.toString(), state);
-    }
     m_mainStateChooser.setDefaultOption("STOWED", SUPERSTRUCTURE_STATE.STOWED);
 
     SmartDashboard.putData("Main State Selector", m_mainStateChooser);
