@@ -11,7 +11,6 @@ import com.pathplanner.lib.commands.PPSwerveControllerCommand;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import frc.robot.Constants.SWERVE_DRIVE;
-import frc.robot.simulation.SimConstants;
 import frc.robot.subsystems.SwerveDrive;
 import java.io.File;
 import java.util.ArrayList;
@@ -44,7 +43,13 @@ public class TrajectoryUtils {
 
         var pathGroup = PathPlanner.loadPathGroup(fileName, pathConstraint, segmentConstraints);
 
-        return SimConstants.absoluteFlip(pathGroup);
+        ArrayList<PathPlannerTrajectory> ppTrajectories = new ArrayList<>();
+        for (var trajectory : pathGroup) {
+          ppTrajectories.add(
+              PathPlannerTrajectory.transformTrajectoryForAlliance(
+                  trajectory, DriverStation.Alliance.Red));
+        }
+        return ppTrajectories;
       }
       return PathPlanner.loadPathGroup(fileName, pathConstraint, segmentConstraints);
     } else {
@@ -53,7 +58,7 @@ public class TrajectoryUtils {
 
         return PathPlanner.loadPathGroup(fileName, pathConstraint, segmentConstraints);
       } catch (Exception e) {
-        DriverStation.reportError("TrajectoryUtils::readTrajectory failed for " + fileName, false);
+        DriverStation.reportError("TrajectoryUtils::readTrajectory failed for " + fileName, null);
         return new ArrayList<>();
       }
     }
@@ -80,7 +85,7 @@ public class TrajectoryUtils {
               swerveDrive.getYPidController(),
               swerveDrive.getThetaPidController(),
               swerveDrive::setSwerveModuleStatesAuto,
-              false,
+              true,
               swerveDrive);
 
       commands.add(swerveCommand);

@@ -5,6 +5,7 @@
 package frc.robot.utils;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.Constants.UTIL;
 import frc.robot.commands.util.DeleteAllLogs;
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +18,8 @@ import java.util.ArrayList;
 public class LogManager {
   private final String mainPath = new File("").getAbsolutePath();
 
+  private final String tempPath = "/tmp/";
+
   private ArrayList<String> logFilePaths = new ArrayList<>();
 
   public LogManager() {
@@ -27,12 +30,17 @@ public class LogManager {
     ArrayList<String> filePaths = new ArrayList<>();
 
     File folder = new File(mainPath);
-    File[] allFiles = folder.listFiles();
+    try {
+      File[] allFiles = folder.listFiles();
 
-    for (File file : allFiles) {
-      if (file.isFile() && file.getName().contains("wpilog")) {
-        filePaths.add(file.getAbsolutePath());
+      assert allFiles != null;
+      for (File file : allFiles) {
+        if (file.isFile() && file.getName().contains("wpilog")) {
+          filePaths.add(file.getAbsolutePath());
+        }
       }
+    } catch (Exception ignored) {
+
     }
 
     return filePaths;
@@ -67,6 +75,27 @@ public class LogManager {
       } else {
         System.out.println("Failed to delete log file " + fileObj.getName());
       }
+    }
+  }
+
+  // Checks if the initialize file exists under the temporary folder.
+  public boolean initTempExists() {
+    try {
+      return Files.isDirectory(Paths.get(tempPath))
+          && Files.isRegularFile(Paths.get(tempPath + UTIL.tempFileName));
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  public void createInitTempFile() {
+    try {
+      if (!System.getProperty("os.name").equals("Windows")) {
+        File fileObj = new File(tempPath + UTIL.tempFileName);
+        fileObj.createNewFile();
+      }
+    } catch (IOException e) {
+      //      DriverStation.reportWarning("Failed to create init file", e.getStackTrace());
     }
   }
 

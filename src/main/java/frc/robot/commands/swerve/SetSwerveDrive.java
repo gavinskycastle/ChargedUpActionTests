@@ -37,7 +37,6 @@ public class SetSwerveDrive extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    // TODO: To match global field references, invert throttle, strafe when on Red Alliance
     double throttle =
         MathUtil.applyDeadband(Math.abs(m_throttleInput.getAsDouble()), 0.05)
             * Math.signum(m_throttleInput.getAsDouble());
@@ -47,6 +46,12 @@ public class SetSwerveDrive extends CommandBase {
     double rotation =
         MathUtil.applyDeadband(Math.abs(m_rotationInput.getAsDouble()), 0.05)
             * Math.signum(m_rotationInput.getAsDouble());
+
+    //    if (DriverStation.isFMSAttached()
+    //        && Controls.getAllianceColor() == DriverStation.Alliance.Red) {
+    //      throttle *= -1;
+    //      strafe *= -1;
+    //    }
 
     m_swerveDrive.drive(throttle, strafe, rotation, true, false);
   }

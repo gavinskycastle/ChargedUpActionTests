@@ -137,7 +137,8 @@ public class LEDSubsystem extends SubsystemBase implements AutoCloseable {
         m_toAnimate = null;
         break;
       default:
-        System.out.println("Incorrect animation type provided to changeAnimation() method");
+        //        System.out.println("Incorrect animation type provided to changeAnimation()
+        // method");
         break;
     }
   }
@@ -148,27 +149,32 @@ public class LEDSubsystem extends SubsystemBase implements AutoCloseable {
   public void expressState(SUPERSTRUCTURE_STATE state) {
     if (state != currentRobotState) {
       switch (state) {
+        case WRIST_IS_RESET:
+          setPattern(LED.pink, 0, 0, ANIMATION_TYPE.Solid); // Flashing Pink
+          break;
         case INTAKE_LOW_CONE:
-          setPattern(LED.yellow, 0, 0, ANIMATION_TYPE.Solid);
+          setPattern(LED.yellow, 0, 0, ANIMATION_TYPE.Strobe); // Flashing Yellow
           break;
         case INTAKE_LOW_CUBE:
-          setPattern(LED.purple, 0, 0, ANIMATION_TYPE.Solid);
+          setPattern(LED.purple, 0, 0, ANIMATION_TYPE.Strobe); // Flashing Purple
           break;
         case ALPHA_ZONE:
         case SCORE_LOW_REVERSE:
         case SCORE_LOW:
-        case SCORE_LOW_CONE:
         case SCORE_LOW_CUBE:
-          setPattern(LED.white, 0, 0, ANIMATION_TYPE.Solid); // Solid White
+        case SCORE_LOW_CONE:
+          setPattern(LED.turquoise, 0, 0, ANIMATION_TYPE.Solid); // Solid Turquoise
           break;
         case BETA_ZONE:
         case SCORE_MID:
         case SCORE_MID_CONE:
         case SCORE_MID_CUBE:
-          setPattern(LED.blue, 15, 0, ANIMATION_TYPE.Solid); // Solid Blue
+          setPattern(LED.blue, 0, 0, ANIMATION_TYPE.Solid); // Solid Blue
           break;
         case GAMMA_ZONE:
         case INTAKE_EXTENDED:
+          setPattern(LED.white, 15, 0, ANIMATION_TYPE.Solid); // Solid White
+          break;
         case SCORE_HIGH:
         case SCORE_HIGH_CONE:
         case SCORE_HIGH_CUBE:

@@ -3,12 +3,10 @@ package frc.robot.commands.auto;
 import com.pathplanner.lib.PathConstraints;
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.commands.PPSwerveControllerCommand;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RepeatCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import frc.robot.Constants;
+import edu.wpi.first.wpilibj2.command.*;
+import frc.robot.Constants.STATE_HANDLER;
 import frc.robot.Constants.SWERVE_DRIVE;
-import frc.robot.commands.statehandler.AutoSetSetpoint;
+import frc.robot.commands.statehandler.SetSetpoint;
 import frc.robot.commands.swerve.SetSwerveOdometry;
 import frc.robot.simulation.FieldSim;
 import frc.robot.subsystems.Elevator;
@@ -19,7 +17,7 @@ import frc.robot.utils.TrajectoryUtils;
 import java.util.List;
 
 public class TestSimAuto extends SequentialCommandGroup {
-  List<PathPlannerTrajectory> m_trajectories;
+  private final List<PathPlannerTrajectory> m_trajectories;
 
   public TestSimAuto(
       String pathName,
@@ -45,10 +43,7 @@ public class TestSimAuto extends SequentialCommandGroup {
         swerveCommands.get(0),
         swerveCommands.get(1),
         swerveCommands.get(2),
-        new AutoSetSetpoint(
-                stateHandler, elevator, wrist, Constants.STATE_HANDLER.SETPOINT.SCORE_HIGH)
-            .withTimeout(3),
-        new AutoSetSetpoint(stateHandler, elevator, wrist, Constants.STATE_HANDLER.SETPOINT.STOWED)
+        new SetSetpoint(stateHandler, elevator, wrist, STATE_HANDLER.SETPOINT.SCORE_HIGH_CONE)
             .withTimeout(3),
         swerveCommands.get(3),
         new RepeatCommand(

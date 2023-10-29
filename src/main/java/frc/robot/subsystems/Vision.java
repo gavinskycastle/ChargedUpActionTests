@@ -4,6 +4,8 @@
 
 package frc.robot.subsystems;
 
+import static frc.robot.subsystems.StateHandler.m_chassisRoot2d;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
@@ -19,13 +21,13 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.STATE_HANDLER;
+import frc.robot.Constants.INTAKE.INTAKE_STATE;
 import frc.robot.Constants.VISION;
 import frc.robot.Constants.VISION.CAMERA_SERVER;
+import frc.robot.Constants.VISION.PIPELINE;
 import java.util.stream.DoubleStream;
 
 public class Vision extends SubsystemBase implements AutoCloseable {
-
   private final SwerveDrive m_swerveDrive;
   private final Controls m_controls;
   private final Intake m_intakeSub;
@@ -33,8 +35,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
   // Mech2d setup
   private MechanismLigament2d m_limelightLigament2d;
 
-  private final NetworkTable m_intakeNet;
-  private final NetworkTable outtake;
+  private final NetworkTable m_intakeNt;
   private final NetworkTable m_leftLocalizer;
   private final NetworkTable m_rightLocalizer;
   private final NetworkTable m_fLocalizer;
@@ -53,14 +54,8 @@ public class Vision extends SubsystemBase implements AutoCloseable {
   private double startTime, timestamp;
   private boolean timerStart;
 
-  private enum targetType {
-    INTAKING,
-    CONE,
-    CUBE,
-    NONE
-  }
-
-  private targetType targetFound = targetType.NONE;
+  private INTAKE_STATE limelightState = INTAKE_STATE.NONE;
+  private double m_pipeline;
 
   private final Pose2d defaultPose = new Pose2d(-5, -5, new Rotation2d());
 
@@ -79,8 +74,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
     m_controls = controls;
     m_intakeSub = intake;
 
-    m_intakeNet = NetworkTableInstance.getDefault().getTable("limelight");
-    outtake = NetworkTableInstance.getDefault().getTable("limelight");
+    m_intakeNt = NetworkTableInstance.getDefault().getTable("limelight");
     m_leftLocalizer = NetworkTableInstance.getDefault().getTable("lLocalizer");
     m_rightLocalizer = NetworkTableInstance.getDefault().getTable("rLocalizer");
     m_fLocalizer = NetworkTableInstance.getDefault().getTable("fusedLocalizer");
@@ -117,11 +111,10 @@ public class Vision extends SubsystemBase implements AutoCloseable {
 
     try {
       m_limelightLigament2d =
-          STATE_HANDLER.chassisRoot2d.append(
-              new MechanismLigament2d("Limelight", Units.inchesToMeters(8), 90));
+          m_chassisRoot2d.append(new MechanismLigament2d("Limelight", Units.inchesToMeters(8), 90));
       m_limelightLigament2d.setColor(new Color8Bit(0, 180, 40)); // Green
-    } catch (Exception e) {
-      //      System.out.println("Dumb WPILib Exception");
+    } catch (Exception ignored) {
+
     }
   }
 
@@ -144,7 +137,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
   public double getValidTargetType(CAMERA_SERVER location) {
     switch (location) {
       case INTAKE:
-        return m_intakeNet.getEntry("tv").getDouble(0);
+        return m_intakeNt.getEntry("tv").getDouble(0);
       case LEFT_LOCALIZER:
         return m_leftLocalizer.getEntry("tv").getDouble(0);
       case RIGHT_LOCALIZER:
@@ -173,7 +166,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
   public double getTargetXAngle(CAMERA_SERVER location) {
     switch (location) {
       case INTAKE:
-        return -m_intakeNet.getEntry("tx").getDouble(0);
+        return -m_intakeNt.getEntry("tx").getDouble(0);
       default:
         return 0;
     }
@@ -185,7 +178,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
   public double getTargetYAngle(CAMERA_SERVER location) {
     switch (location) {
       case INTAKE:
-        return m_intakeNet.getEntry("ty").getDouble(0);
+        return m_intakeNt.getEntry("ty").getDouble(0);
       default:
         return 0;
     }
@@ -197,7 +190,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
   public double getCameraLatency(CAMERA_SERVER location) {
     switch (location) {
       case INTAKE:
-        return m_intakeNet.getEntry("tl").getDouble(0);
+        return m_intakeNt.getEntry("tl").getDouble(0);
       default:
         return 0;
     }
@@ -209,7 +202,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
   public double getTargetArea(CAMERA_SERVER location) {
     switch (location) {
       case INTAKE:
-        return m_intakeNet.getEntry("ta").getDouble(0);
+        return m_intakeNt.getEntry("ta").getDouble(0);
       default:
         return 0;
     }
@@ -234,17 +227,17 @@ public class Vision extends SubsystemBase implements AutoCloseable {
    * Pipeline 2 = cone
    */
   public void setPipeline(CAMERA_SERVER location, double pipeline) {
-    switch (location) {
-      case INTAKE:
-        m_intakeNet.getEntry("pipeline").setDouble(pipeline);
-        break;
-    }
+    m_pipeline = pipeline;
+  }
+
+  public void updatePipeline() {
+    m_intakeNt.getEntry("pipeline").setDouble(1);
   }
 
   public double getPipeline(CAMERA_SERVER location) {
     switch (location) {
       case INTAKE:
-        return m_intakeNet.getEntry("pipeline").getDouble(0);
+        return m_intakeNt.getEntry("pipeline").getDouble(0);
       default:
         return 0.0;
     }
@@ -276,7 +269,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
    * resets timer for pipeline finder
    */
   public void resetPipelineSearch() {
-    targetFound = targetType.NONE;
+    limelightState = INTAKE_STATE.NONE;
     searchPipelineTimer.reset();
     searchPipelineTimer.start();
   }
@@ -285,15 +278,15 @@ public class Vision extends SubsystemBase implements AutoCloseable {
    * Look for any target
    */
   public boolean searchLimelightTarget(CAMERA_SERVER location) {
-    if (getPipeline(location) == 1.0
-        && m_intakeSub.getIntakeCubeState()) { // CUBE and if we're looking for cube
-      return getValidTargetType(location) == 1.0
-          && getTargetArea(location) > 3.0; // target read within threshold
-    } else if (getPipeline(location) == 2.0
-        && m_intakeSub.getIntakeConeState()) { // CONE and if we're looking for cone
-      return getValidTargetType(location) == 1.0
-          && getTargetArea(location) > 3.0; // target read within threshold
-    }
+    //    if (getPipeline(location) == 1.0
+    //        && m_intakeSub.getIntakeCubeState()) { // CUBE and if we're looking for cube
+    //      return getValidTargetType(location) == 1.0
+    //          && getTargetArea(location) > 1.0; // target read within threshold
+    //    } else if (getPipeline(location) == 2.0
+    //        && m_intakeSub.getIntakeConeState()) { // CONE and if we're looking for cone
+    //      return getValidTargetType(location) == 1.0
+    //          && getTargetArea(location) > 1.0; // target read within threshold
+    //    }
     return false;
   }
 
@@ -314,7 +307,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
 
     if (timestamp != 0 || searchTimer.get() - startTime > 3) {
       if (timerStart && searchTimer.get() - timestamp > 0.1 || searchTimer.get() - startTime > 2) {
-        targetFound = targetType.NONE;
+        limelightState = INTAKE_STATE.NONE;
         searchLimelightPipeline(location);
       }
     }
@@ -324,31 +317,33 @@ public class Vision extends SubsystemBase implements AutoCloseable {
    * Look for a pipeline until a clear target is found when intaking
    */
   public void searchLimelightPipeline(CAMERA_SERVER location) {
-    if (m_intakeSub.getIntakeConeState() || m_intakeSub.getIntakeCubeState()) {
+    // Search
+    if (limelightState == INTAKE_STATE.INTAKING_CONE
+        || limelightState == INTAKE_STATE.INTAKING_CUBE) {
       int pipeline = (int) (Math.floor(searchPipelineTimer.get() / searchPipelineWindow) % 2) + 1;
 
       // threshold to find game object
-      if (targetFound == targetType.NONE || targetFound == targetType.INTAKING) {
-        setPipeline(location, pipeline);
-        if (getTargetArea(location) > 3.0 && pipeline == 1) {
-          targetFound = targetType.CUBE;
-        } else if (getTargetArea(location) > 3.0 && pipeline == 2) {
-          targetFound = targetType.CONE;
-        }
+      setPipeline(location, pipeline);
+      // Try to find cube
+      if (pipeline == PIPELINE.CUBE.get()) {
+        if (getTargetArea(location) > 3.0) limelightState = INTAKE_STATE.INTAKING_CUBE;
       }
+      if (pipeline == PIPELINE.CONE.get()) {
+        if (getTargetArea(location) > 3.0) limelightState = INTAKE_STATE.INTAKING_CONE;
+      }
+    }
 
-      // threshold to lose game object once it's found
-      if (targetFound == targetType.CUBE) {
-        if (getTargetArea(location) < 2.0) {
-          reconnectLimelightPipeline(location);
-          targetFound = targetType.NONE;
-        }
+    // threshold to lose game object once it's found
+    if (limelightState == INTAKE_STATE.INTAKING_CONE) {
+      if (getTargetArea(location) < 2.0) {
+        reconnectLimelightPipeline(location);
+        limelightState = INTAKE_STATE.NONE;
       }
-      if (targetFound == targetType.CONE) {
-        if (getTargetArea(location) < 2.0) {
-          reconnectLimelightPipeline(location);
-          targetFound = targetType.NONE;
-        }
+    }
+    if (limelightState == INTAKE_STATE.INTAKING_CUBE) {
+      if (getTargetArea(location) < 2.0) {
+        reconnectLimelightPipeline(location);
+        limelightState = INTAKE_STATE.NONE;
       }
     }
   }
@@ -548,8 +543,10 @@ public class Vision extends SubsystemBase implements AutoCloseable {
         });
     // This method will be called once per scheduler run
     updateSmartDashboard();
-    updateVisionPose(CAMERA_SERVER.FUSED_LOCALIZER);
-    searchLimelightPipeline(CAMERA_SERVER.INTAKE);
+    // updateVisionPose(CAMERA_SERVER.FUSED_LOCALIZER);
+    // searchLimelightPipeline(CAMERA_SERVER.INTAKE);
+    updatePipeline();
+    // searchforCube(CAMERA_SERVER.INTAKE, 1.0);
     logData();
   }
 
@@ -560,5 +557,7 @@ public class Vision extends SubsystemBase implements AutoCloseable {
 
   @SuppressWarnings("RedundantThrows")
   @Override
-  public void close() throws Exception {}
+  public void close() throws Exception {
+    if (m_limelightLigament2d != null) m_limelightLigament2d.close();
+  }
 }

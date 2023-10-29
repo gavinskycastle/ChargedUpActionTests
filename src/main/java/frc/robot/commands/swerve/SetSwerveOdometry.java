@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.simulation.FieldSim;
+import frc.robot.simulation.SimConstants;
 import frc.robot.subsystems.SwerveDrive;
 
 /** Sets the robot's position */
@@ -20,7 +21,7 @@ public class SetSwerveOdometry extends CommandBase {
 
   private final FieldSim m_fieldSim;
 
-  private final Pose2d m_pose2d;
+  private Pose2d m_pose2d;
 
   /**
    * Sets the robot's position
@@ -54,8 +55,10 @@ public class SetSwerveOdometry extends CommandBase {
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
-    m_swerveDrive.setOdometry(m_pose2d);
+    m_pose2d = SimConstants.pathPlannerFlip(m_pose2d);
+
     if (RobotBase.isSimulation()) m_fieldSim.resetRobotPose(m_pose2d);
+    m_swerveDrive.setOdometry(m_pose2d);
     //    SmartDashboard.putNumber("SwerveInitialPositionX", m_pose2d.getX());
     //    SmartDashboard.putNumber("SwerveInitialPositionY", m_pose2d.getY());
     //    SmartDashboard.putNumber("SwerveInitialPositionRotation",

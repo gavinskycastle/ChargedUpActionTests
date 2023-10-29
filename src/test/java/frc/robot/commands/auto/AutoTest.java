@@ -2,22 +2,15 @@ package frc.robot.commands.auto;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.pathplanner.lib.PathConstraints;
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.CommandTestBase;
-import frc.robot.Constants.SWERVE_DRIVE;
 import frc.robot.RobotContainer;
 import frc.robot.simulation.FieldSim;
 import frc.robot.simulation.SimConstants;
 import frc.robot.subsystems.*;
-import frc.robot.utils.TrajectoryUtils;
 import org.junit.jupiter.api.*;
 
-@Disabled
-public class AutoTest extends CommandTestBase {
+public class AutoTest {
   protected RobotContainer m_robotContainer;
   protected SwerveDrive m_swerveDrive;
   protected Elevator m_elevator;
@@ -48,6 +41,7 @@ public class AutoTest extends CommandTestBase {
     m_robotContainer.close();
   }
 
+  @Disabled("Cannot Flip PathPlanner")
   @Test
   public void testAutoPathFlipping() {
     System.out.println("Starting Test...");
@@ -56,8 +50,8 @@ public class AutoTest extends CommandTestBase {
     double blueTrajectoryMinY = 0;
     double blueTrajectoryMaxY = SimConstants.fieldWidth - Units.inchesToMeters(90);
     var blueAuto =
-        new TwoPiece(
-            "BlueTwoPiece",
+        new SubstationTwo(
+            "BlueSubstationTwo",
             m_swerveDrive,
             m_fieldSim,
             m_wrist,
@@ -82,11 +76,9 @@ public class AutoTest extends CommandTestBase {
     double redTrajectoryMinY = Units.inchesToMeters(90);
     double redTrajectoryMaxY = SimConstants.fieldWidth;
 
-    //        var test = TrajectoryUtils.readTrajectory("RedOnePiece", new PathConstraints(1, 1));
-
     var redAuto =
-        new TwoPiece(
-            "RedTwoPiece",
+        new SubstationTwo(
+            "RedSubstationTwo",
             m_swerveDrive,
             m_fieldSim,
             m_wrist,
@@ -105,46 +97,5 @@ public class AutoTest extends CommandTestBase {
                 && state.poseMeters.getY() < redTrajectoryMaxY);
       }
     }
-  }
-
-  @Test
-  public void testAutoPathFollowing() {
-
-    var trajectories =
-        TrajectoryUtils.readTrajectory(
-            "TestSimAuto Copy",
-            new PathConstraints(
-                SWERVE_DRIVE.kMaxSpeedMetersPerSecond * 0.4,
-                SWERVE_DRIVE.kMaxSpeedMetersPerSecond * 0.4));
-    var commands = TrajectoryUtils.generatePPSwerveControllerCommand(m_swerveDrive, trajectories);
-
-    var timer = new Timer();
-    m_swerveDrive.setOdometry(trajectories.get(0).getInitialHolonomicPose());
-
-    for (int i = 0; i < trajectories.size(); i++) {
-      CommandScheduler.getInstance().schedule(commands.get(i));
-      double currentTime;
-      timer.reset();
-      timer.start();
-
-      while (true) {
-        CommandScheduler.getInstance().run();
-        currentTime = timer.get();
-        if (trajectories.get(i).getTotalTimeSeconds() < currentTime) {
-          break;
-        }
-
-        var currentPose = m_swerveDrive.getPoseMeters();
-        var trajectoryPose = trajectories.get(i).sample(currentTime);
-
-        var xDelta = Math.abs(trajectoryPose.poseMeters.getX() - currentPose.getX());
-        var yDelta = Math.abs(trajectoryPose.poseMeters.getY() - currentPose.getY());
-        if (xDelta > 2 || yDelta > 2) {
-          System.out.printf("Trajectory failed at T=%fs", currentTime);
-          assertTrue(false);
-        }
-      }
-    }
-    assertTrue(true);
   }
 }

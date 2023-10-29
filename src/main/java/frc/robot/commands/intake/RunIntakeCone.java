@@ -26,31 +26,20 @@ public class RunIntakeCone extends CommandBase {
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
-    m_intake.setIntakeStateCone(true);
-    m_intake.setIntakeStateCone(true);
+    m_intake.setIntaking(true);
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
     m_intake.setPercentOutput(-m_PercentOutput);
-    // if (m_vision.searchLimelightTarget(CAMERA_SERVER.INTAKE)) {
-    //   m_swerve.enableHeadingTarget(true);
-    //   m_swerve.setRobotHeading(
-    //       m_swerve
-    //           .getHeadingRotation2d()
-    //           .minus(Rotation2d.fromDegrees(m_vision.getTargetXAngle(CAMERA_SERVER.INTAKE)))
-    //           .getRadians());
-    // }
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
     m_intake.setPercentOutput(0);
-    m_intake.setIntakeStateCone(false);
-    // m_swerve.enableHeadingTarget(false);
-    m_intake.setIntakeStateCone(false);
+    m_intake.setIntaking(false);
   }
 
   // Returns true when the command should end.

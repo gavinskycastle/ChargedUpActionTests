@@ -70,8 +70,6 @@ public class SwerveModule extends SubsystemBase implements AutoCloseable {
           SWERVE_MODULE.kDriveGearbox,
           SWERVE_MODULE.kDriveMotorGearRatio);
 
-  private double m_drivePercentOutput;
-  private double m_turnPercentOutput;
   private double m_driveMotorSimDistance;
   private double m_turnMotorSimDistance;
 
@@ -110,6 +108,9 @@ public class SwerveModule extends SubsystemBase implements AutoCloseable {
     m_driveMotor.configFactoryDefault();
     m_driveMotor.configAllSettings(CtreUtils.generateDriveMotorConfig());
     m_driveMotor.setInverted(false);
+    m_driveMotor.setNeutralMode(NeutralMode.Brake);
+    m_turnMotor.setNeutralMode(NeutralMode.Brake);
+
     m_driveEncoderSimSign = m_driveMotor.getInverted() ? -1 : 1;
 
     // m_angleEncoder.configMagnetOffset(m_angleOffset);
@@ -152,8 +153,12 @@ public class SwerveModule extends SubsystemBase implements AutoCloseable {
   }
 
   public void resetAngleToAbsolute() {
-    double angle = m_angleEncoder.getAbsolutePosition() - m_angleOffset;
-    m_turnMotor.setSelectedSensorPosition(angle / SWERVE_MODULE.kTurningMotorDistancePerPulse);
+    resetAngle(0);
+  }
+
+  public void resetAngle(double angle) {
+    double newAngle = m_angleEncoder.getAbsolutePosition() - m_angleOffset + angle;
+    m_turnMotor.setSelectedSensorPosition(newAngle / SWERVE_MODULE.kTurningMotorDistancePerPulse);
   }
 
   public double getHeadingDegrees() {
@@ -200,9 +205,6 @@ public class SwerveModule extends SubsystemBase implements AutoCloseable {
     // Jittering.
     m_turnMotor.set(ControlMode.Position, angle / SWERVE_MODULE.kTurningMotorDistancePerPulse);
     m_lastAngle = angle;
-
-    m_drivePercentOutput = m_driveMotor.getMotorOutputPercent();
-    m_turnPercentOutput = m_turnMotor.getMotorOutputPercent();
   }
 
   public SwerveModuleState getState() {
@@ -265,10 +267,8 @@ public class SwerveModule extends SubsystemBase implements AutoCloseable {
 
   @Override
   public void simulationPeriodic() {
-    m_turnMotorSim.setInputVoltage(
-        MathUtil.clamp(m_turnPercentOutput * RobotController.getBatteryVoltage(), -12, 12));
-    m_driveMotorSim.setInputVoltage(
-        MathUtil.clamp(m_drivePercentOutput * RobotController.getBatteryVoltage(), -12, 12));
+    m_turnMotorSim.setInputVoltage(MathUtil.clamp(m_turnMotor.getMotorOutputVoltage(), -12, 12));
+    m_driveMotorSim.setInputVoltage(MathUtil.clamp(m_driveMotor.getMotorOutputVoltage(), -12, 12));
 
     double dt = StateHandler.getSimDt();
     m_turnMotorSim.update(dt);
@@ -307,6 +307,9 @@ public class SwerveModule extends SubsystemBase implements AutoCloseable {
                 (m_driveEncoderSimSign
                     * m_driveMotorSim.getAngularVelocityRadPerSec()
                     / (SWERVE_MODULE.kDriveMotorDistancePerPulse * 10)));
+
+    m_turnMotor.getSimCollection().setBusVoltage(RobotController.getBatteryVoltage());
+    m_driveMotor.getSimCollection().setBusVoltage(RobotController.getBatteryVoltage());
   }
 
   @SuppressWarnings("RedundantThrows")

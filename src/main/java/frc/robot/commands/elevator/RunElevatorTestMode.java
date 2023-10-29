@@ -10,14 +10,15 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import frc.robot.Constants;
 import frc.robot.Constants.ELEVATOR;
 import frc.robot.subsystems.Elevator;
+import frc.robot.subsystems.StateHandler;
 
 public class RunElevatorTestMode extends CommandBase {
   private final Elevator m_elevator;
+  private final StateHandler m_stateHandler;
 
-  private DoubleSubscriber kSetpointSub,
+  private final DoubleSubscriber kSetpointSub,
       kFSub,
       kPSub,
       kISub,
@@ -40,19 +41,39 @@ public class RunElevatorTestMode extends CommandBase {
       testMaxAccel;
 
   /** Creates a new RunElevatorTestMode. */
-  public RunElevatorTestMode(Elevator elevator) {
+  public RunElevatorTestMode(Elevator elevator, StateHandler stateHandler) {
     m_elevator = elevator;
+    m_stateHandler = stateHandler;
 
     addRequirements(m_elevator);
-  }
 
-  // Called when the command is initially scheduled.
-  @Override
-  public void initialize() {
     NetworkTable elevatorNtTab =
         NetworkTableInstance.getDefault().getTable("Shuffleboard").getSubTable("ElevatorControls");
 
     // initialize Test Values
+    try {
+      elevatorNtTab.getDoubleTopic("kSetpointInches").publish().set(0);
+
+      elevatorNtTab.getDoubleTopic("kP").publish().set(ELEVATOR.kP);
+      elevatorNtTab.getDoubleTopic("kI").publish().set(ELEVATOR.kI);
+      elevatorNtTab.getDoubleTopic("kD").publish().set(ELEVATOR.kD);
+      elevatorNtTab.getDoubleTopic("kIZone").publish().set(0);
+
+      elevatorNtTab
+          .getDoubleTopic("Max Vel in/s")
+          .publish()
+          .set(Units.metersToInches(ELEVATOR.kMaxVel));
+      elevatorNtTab
+          .getDoubleTopic("Max Accel in/s^2")
+          .publish()
+          .set(Units.metersToInches(ELEVATOR.kMaxAccel));
+      elevatorNtTab.getDoubleTopic("kG").publish().set(ELEVATOR.kG);
+      elevatorNtTab.getDoubleTopic("kV").publish().set(ELEVATOR.kV);
+      elevatorNtTab.getDoubleTopic("kA").publish().set(ELEVATOR.kA);
+    } catch (Exception m_ignored) {
+
+    }
+
     kSetpointSub = elevatorNtTab.getDoubleTopic("kSetpointInches").subscribe(0);
 
     kFSub = elevatorNtTab.getDoubleTopic("kF").subscribe(0);
@@ -65,9 +86,20 @@ public class RunElevatorTestMode extends CommandBase {
     kVSub = elevatorNtTab.getDoubleTopic("kV").subscribe(ELEVATOR.kV);
     kASub = elevatorNtTab.getDoubleTopic("kA").subscribe(ELEVATOR.kA);
 
-    kMaxVelSub = elevatorNtTab.getDoubleTopic("Max Vel").subscribe(ELEVATOR.kMaxVel);
-    kMaxAccelSub =
-        elevatorNtTab.getDoubleTopic("Max Accel").subscribe(Constants.ELEVATOR.kMaxAccel);
+    kMaxVelSub = elevatorNtTab.getDoubleTopic("Max Vel in/s").subscribe(ELEVATOR.kMaxVel);
+    kMaxAccelSub = elevatorNtTab.getDoubleTopic("Max Accel in/s^2").subscribe(ELEVATOR.kMaxAccel);
+  }
+
+  @Override
+  public boolean runsWhenDisabled() {
+    return true;
+  }
+
+  // Called when the command is initially scheduled.
+  @Override
+  public void initialize() {
+    // Disable the state handler
+    m_stateHandler.disable();
 
     m_elevator.setUserSetpoint(true);
   }
@@ -75,7 +107,7 @@ public class RunElevatorTestMode extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    DriverStation.reportWarning("USING WRIST TEST MODE!", false);
+    DriverStation.reportWarning("USING ELEVATOR TEST MODE!", false);
     double newSetpoint = Units.inchesToMeters(kSetpointSub.get(0));
 
     double newKF = kFSub.get(0);
@@ -84,22 +116,26 @@ public class RunElevatorTestMode extends CommandBase {
     double newKD = kDSub.get(ELEVATOR.kD);
     double newIZone = kIZoneSub.get(0);
 
-    double newKG = kGSub.get(Constants.ELEVATOR.kG);
-    double newKV = kVSub.get(Constants.ELEVATOR.kV);
-    double newKA = kASub.get(Constants.ELEVATOR.kA);
+    double newKG = kGSub.get(ELEVATOR.kG);
+    double newKV = kVSub.get(ELEVATOR.kV);
+    double newKA = kASub.get(ELEVATOR.kA);
 
-    double newMaxVel = kMaxVelSub.get(ELEVATOR.kMaxVel);
-    double newMaxAccel = kMaxAccelSub.get(ELEVATOR.kMaxAccel);
+    double newMaxVel = Units.inchesToMeters(kMaxVelSub.get(ELEVATOR.kMaxVel));
+    double newMaxAccel = Units.inchesToMeters(kMaxAccelSub.get(ELEVATOR.kMaxAccel));
 
     if (testKF != newKF
-        || (testKP != newKP || testKI != newKI || testKD != newKD || newIZone != newIZone)) {
-      m_elevator.setTalonPIDvalues(newKF, newKP, newKI, newKD, newIZone);
+        || testKP != newKP
+        || testKI != newKI
+        || testKD != newKD
+        || newIZone != newIZone) {
+      m_elevator.setPIDvalues(newKF, newKP, newKI, newKD, newIZone);
       testKF = newKF;
       testKP = newKP;
       testKI = newKI;
       testKD = newKD;
       testKIZone = newIZone;
     }
+
     if (testKG != newKG || testKV != newKV || testKA != newKA) {
       m_elevator.setSimpleMotorFeedForward(newKG, newKV, newKA);
       testKG = newKG;
@@ -109,16 +145,20 @@ public class RunElevatorTestMode extends CommandBase {
 
     if (testMaxVel != newMaxVel || testMaxAccel != newMaxAccel) {
       m_elevator.setTrapezoidalConstraints(newMaxVel, newMaxAccel);
-      testMaxVel = newKG;
-      testMaxAccel = newKV;
+      testMaxVel = newMaxVel;
+      testMaxAccel = newMaxAccel;
     }
 
     m_elevator.setDesiredPositionMeters(newSetpoint);
   }
+
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
     m_elevator.setUserSetpoint(false);
+
+    // Re-enable the state handler
+    m_stateHandler.enable();
   }
 
   // Returns true when the command should end.

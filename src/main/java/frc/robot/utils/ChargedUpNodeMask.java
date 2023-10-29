@@ -4,7 +4,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
-import frc.robot.Constants.INTAKE.INTAKE_STATE;
 import frc.robot.Constants.SCORING_STATE;
 import frc.robot.simulation.SimConstants;
 import frc.robot.subsystems.Controls;
@@ -105,13 +104,17 @@ public class ChargedUpNodeMask {
 
     if (scoringState == SCORING_STATE.LOW || scoringState == SCORING_STATE.LOW_REVERSE) {
       validNodeMask = validNodeMask & hybridNodes;
-    } else if (scoringState == SCORING_STATE.MID_CONE) {
+    }
+    if (scoringState == SCORING_STATE.MID_CONE) {
       validNodeMask = validNodeMask & midConeNodes;
-    } else if (scoringState == SCORING_STATE.MID_CUBE) {
+    }
+    if (scoringState == SCORING_STATE.MID_CUBE) {
       validNodeMask = validNodeMask & midCubeNodes;
-    } else if (scoringState == SCORING_STATE.HIGH_CONE) {
+    }
+    if (scoringState == SCORING_STATE.HIGH_CONE) {
       validNodeMask = validNodeMask & highConeNodes;
-    } else if (scoringState == SCORING_STATE.HIGH_CUBE) {
+    }
+    if (scoringState == SCORING_STATE.HIGH_CUBE) {
       validNodeMask = validNodeMask & highCubeNodes;
     }
   }
@@ -131,19 +134,6 @@ public class ChargedUpNodeMask {
   }
 
   public static Pose2d getTargetNode(Pose2d robotPose) {
-    var validNodes = getValidNodes();
-    if (validNodes.size() == 0) return new Pose2d();
-    else
-      return new Pose2d(robotPose.getTranslation().nearest(validNodes), Rotation2d.fromDegrees(0));
-  }
-
-  public static Pose2d getTargetNode(Pose2d robotPose, INTAKE_STATE intakeState) {
-    if (intakeState == INTAKE_STATE.CONE) {
-      validNodeMask = validNodeMask & ~coneNodes;
-    }
-    if (intakeState == INTAKE_STATE.CUBE) {
-      validNodeMask = validNodeMask & ~cubeNodes;
-    }
     var validNodes = getValidNodes();
     if (validNodes.size() == 0) return new Pose2d();
     else
